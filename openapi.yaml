@@ -1,0 +1,317 @@
+openapi: 3.0.0
+info:
+  title: AtlaTerminal API
+  version: 1.0.0
+  description: |
+    Comprehensive public API for AtlaTerminal.ai: token data, pair/liquidity stats, and holder analytics.
+servers:
+  - url: https://api.atlaterminal.io/v1
+paths:
+  /tokens/trending:
+    get:
+      summary: Get Trending Tokens
+      description: Returns the top trending tokens across all supported chains.
+      responses:
+        '200':
+          description: A list of trending token objects.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Token'
+
+  /tokens/search:
+    get:
+      summary: Search Tokens
+      description: Search for tokens by name, symbol, or contract address.
+      parameters:
+        - in: query
+          name: query
+          required: true
+          schema:
+            type: string
+          description: The search term (token name, symbol, or address).
+      responses:
+        '200':
+          description: A list of matching token objects.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Token'
+
+  /tokens/{chain}/{address}:
+    get:
+      summary: Get Token Metadata
+      description: Fetch detailed metadata for a token on the specified chain.
+      parameters:
+        - $ref: '#/components/parameters/chain'
+        - in: path
+          name: address
+          required: true
+          schema:
+            type: string
+          description: The contract address of the token.
+      responses:
+        '200':
+          description: Token metadata object.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenMetadata'
+
+  /pairs/{chain}/{tokenAddress}:
+    get:
+      summary: List Token Pairs
+      description: Retrieve all trading pairs for a given token on the specified chain.
+      parameters:
+        - $ref: '#/components/parameters/chain'
+        - in: path
+          name: tokenAddress
+          required: true
+          schema:
+            type: string
+          description: The token contract address.
+      responses:
+        '200':
+          description: Array of pair objects.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Pair'
+
+  /pairs/{chain}/{pairAddress}/stats:
+    get:
+      summary: Get Pair Stats
+      description: Retrieve price, volume, liquidity and other statistics for a trading pair.
+      parameters:
+        - $ref: '#/components/parameters/chain'
+        - in: path
+          name: pairAddress
+          required: true
+          schema:
+            type: string
+          description: The pair contract address.
+      responses:
+        '200':
+          description: Pair statistics object.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PairStats'
+
+  /pairs/{chain}/{pairAddress}/swaps:
+    get:
+      summary: Get Pair Swaps
+      description: Fetch swap transaction history for a trading pair.
+      parameters:
+        - $ref: '#/components/parameters/chain'
+        - in: path
+          name: pairAddress
+          required: true
+          schema:
+            type: string
+          description: The pair contract address.
+      responses:
+        '200':
+          description: Array of swap transaction objects.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Swap'
+
+  /pairs/{chain}/{pairAddress}/snipers:
+    get:
+      summary: Get Pair Snipers
+      description: Identify early buyer/sniper bot transactions for a new pair.
+      parameters:
+        - $ref: '#/components/parameters/chain'
+        - in: path
+          name: pairAddress
+          required: true
+          schema:
+            type: string
+          description: The pair contract address.
+      responses:
+        '200':
+          description: Array of sniper transaction objects.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Swap'
+
+  /holders/{chain}/{tokenAddress}:
+    get:
+      summary: List Token Holders
+      description: List all holders and their balances for a given token.
+      parameters:
+        - $ref: '#/components/parameters/chain'
+        - in: path
+          name: tokenAddress
+          required: true
+          schema:
+            type: string
+          description: The token contract address.
+      responses:
+        '200':
+          description: Array of holder objects.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Holder'
+
+  /holders/{chain}/{tokenAddress}/stats:
+    get:
+      summary: Get Token Holder Stats
+      description: Retrieve aggregated holder distribution and statistics.
+      parameters:
+        - $ref: '#/components/parameters/chain'
+        - in: path
+          name: tokenAddress
+          required: true
+          schema:
+            type: string
+          description: The token contract address.
+      responses:
+        '200':
+          description: Holder statistics object.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HolderStats'
+
+components:
+  parameters:
+    chain:
+      name: chain
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Blockchain identifier (e.g., `eth`, `bsc`, `polygon`, `arbitrum`, etc.).
+
+  schemas:
+    Token:
+      type: object
+      properties:
+        symbol:
+          type: string
+        address:
+          type: string
+        name:
+          type: string
+        logo:
+          type: string
+      required: [symbol, address]
+
+    TokenMetadata:
+      type: object
+      properties:
+        symbol:
+          type: string
+        name:
+          type: string
+        decimals:
+          type: integer
+        logo:
+          type: string
+        description:
+          type: string
+      required: [symbol, name, decimals]
+
+    Pair:
+      type: object
+      properties:
+        pairAddress:
+          type: string
+        token0:
+          $ref: '#/components/schemas/Token'
+        token1:
+          $ref: '#/components/schemas/Token'
+      required: [pairAddress, token0, token1]
+
+    PairStats:
+      type: object
+      properties:
+        currentPrice:
+          type: number
+        volume:
+          type: object
+          additionalProperties:
+            type: number
+        liquidity:
+          type: number
+      required: [currentPrice, volume, liquidity]
+
+    Swap:
+      type: object
+      properties:
+        transactionHash:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        amount0:
+          type: number
+        amount1:
+          type: number
+
+    Holder:
+      type: object
+      properties:
+        address:
+          type: string
+        balance:
+          type: number
+
+    HolderStats:
+      type: object
+      properties:
+        totalHolders:
+          type: integer
+        topHolderPercentage:
+          type: number
+        distribution:
+          type: object
+          additionalProperties:
+            type: number
+        topHolders:
+          type: array
+          items:
+            $ref: '#/components/schemas/Holder'
+      required: [totalHolders, topHolderPercentage, distribution, topHolders]
+      description: Holder statistics object.
+      example:
+        totalHolders: 1000
+        topHolderPercentage: 5.0
+        distribution:
+          '0-1%': 500
+          '1-5%': 300
+          '5-10%': 150
+          '10-20%': 50
+        topHolders:
+          - address: '0x1234567890abcdef1234567890abcdef12345678'
+            balance: 1000000
+          - address: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'
+            balance: 500000
+        - address: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'
+          balance: 250000
+        - address: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'
+
+          balance: 100000
+        - address: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'
+          balance: 50000
+        - address: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'
+          balance: 25000
+        - address: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'
+          balance: 10000
